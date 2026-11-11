@@ -1,0 +1,66 @@
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+.kotlin
+
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+
+### Logs ###
+logs/
+**/logs/
+
+### Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+### Mac OS ###
+.DS_Store
+.env
+
+### Загрузки пользователей и демо-фото (V-045) ###
+uploads/
+
+### Личные заметки и секреты (V-027/V-045) ###
+sql/seed-admins.sql
+gpt.MD
+rugo-context.md
+otchet*.MD
+planadmin.MD
+
+### rugo-webapp (frontend) ###
+rugo-webapp/node_modules/
+rugo-webapp/dist/
+rugo-webapp/.vite/
+
+### rugo-admin-web (frontend админки) ###
+rugo-admin-web/node_modules/
+rugo-admin-web/dist/
+rugo-admin-web/.vite/
+# Собранная статика админки — кладётся сюда `npm run build` и пакуется в jar
+rugo-admin/src/main/resources/static/admin/
+
+### Локальные dev-логи ###
+*.log

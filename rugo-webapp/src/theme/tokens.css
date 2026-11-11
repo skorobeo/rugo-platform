@@ -1,0 +1,45 @@
+/**
+ * Тема мини-приложения: только светлая, поверх токенов MAX UI.
+ * Своих цветов не заводим — используем переменные @maxhub/max-ui
+ * (--background-*, --text-*, --button-primary и т.д.) и дополняем их
+ * вспомогательными токенами RuGo (градиент, радиусы, отступы).
+ */
+:root {
+  color-scheme: light;
+
+  --rg-gradient: var(--gradient-blue, linear-gradient(157deg, #08d7f3 6.38%, #5398ff 85%));
+  --rg-radius-card: 16px;
+  --rg-radius-action: 12px;
+  --rg-radius-button: 20px;
+  --rg-gap: 16px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--background-primary, #ffffff);
+  color: var(--text-primary, #060708);
+  font-family: var(
+    --font,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif
+  );
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: contain;
+}
+
+#root {
+  min-height: 100%;
+}

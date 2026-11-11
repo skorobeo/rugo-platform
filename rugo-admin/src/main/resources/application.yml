@@ -1,0 +1,88 @@
+# Админ-бот RuGo: модерация заявок. Отдельный процесс, общая БД с rugo-app.
+# Запуск из корня репозитория, чтобы подхватился .env.
+server:
+  # Веб-админка модуля (порт для UI; доставка апдейтов — webhook или long polling)
+  port: "${ADMIN_SERVER_PORT:8081}"
+  # Слушаем только локально; наружу — через Nginx (override: SERVER_ADDRESS=0.0.0.0)
+  address: "${SERVER_ADDRESS:127.0.0.1}"
+
+spring:
+  config:
+    import: "optional:file:.env[.properties]"
+  servlet:
+    multipart:
+      # Загрузка фото из админки (те же правила, что у партнёров)
+      max-file-size: 5MB
+      max-request-size: 16MB
+  datasource:
+    url: "${DB_URL:jdbc:postgresql://localhost:5432/rugo_db}"
+    username: "${DB_USER:rugo_user}"
+    password: "${DB_PASSWORD:}"
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  task:
+    scheduling:
+      pool:
+        # Поллер (long-polling) и скан заявок не должны блокировать друг друга
+        size: 2
+
+max:
+  # Основной бот (уведомление партнёра после одобрения)
+  bot:
+    token: "${MAX_BOT_TOKEN:}"
+  # Админ-бот
+  admin:
+    bot:
+      token: "${ADMIN_BOT_TOKEN:}"
+      # longpoll — старый режим; webhook — production-режим MAX.
+      delivery-mode: "${ADMIN_DELIVERY_MODE:longpoll}"
+      webhook:
+        # Пусто — берётся ${PUBLIC_BASE_URL}/admin/max/webhook
+        url: "${ADMIN_WEBHOOK_URL:}"
+        secret: "${ADMIN_WEBHOOK_SECRET:}"
+  webhook:
+    # Как часто проверять/восстанавливать подписку (мс)
+    check-delay-ms: "${ADMIN_WEBHOOK_CHECK_DELAY_MS:300000}"
+
+admin:
+  # Администраторы хранятся в БД (таблица admins, доступ по MAX id).
+  # Публичный базовый URL для абсолютных ссылок на фото (напр. https://домен)
+  public-base-url: "${PUBLIC_BASE_URL:}"
+  poll-timeout-seconds: "${ADMIN_POLL_TIMEOUT:20}"
+  poll-limit: "${ADMIN_POLL_LIMIT:100}"
+  # Отправлять карточки заявок в чат админ-бота (по умолчанию выключено — работаем в веб-админке)
+  notify-cards-enabled: "${ADMIN_NOTIFY_CARDS:false}"
+  # Как часто сканировать новые заявки в БД, мс
+  leads-scan-delay-ms: "${ADMIN_LEADS_SCAN_DELAY_MS:10000}"
+  # Сколько последних строк лога отдавать командой /logs
+  logs-tail-lines: "${ADMIN_LOGS_TAIL_LINES:300}"
+  # Начало статистики (ISO-8601 с часовым поясом). Пусто — без ограничения.
+  stats-start-at: "${ADMIN_STATS_START_AT:}"
+
+# Нужно общей загрузке фото (PhotoStorageService): лимит байт на файл.
+app:
+  # Соль для HMAC user_hash — та же, что у rugo-app (иначе фильтр статистики не совпадёт).
+  analytics-salt: "${ANALYTICS_SALT:}"
+  photo-max-bytes: "${PHOTO_MAX_BYTES:5242880}"
+  photo-uploads-enabled: "${PHOTO_UPLOADS_ENABLED:true}"
+  # Сброс кэша каталога в rugo-app после правок (мгновенное появление в мини-приложении)
+  internal-base-url: "${INTERNAL_BASE_URL:http://127.0.0.1:8080}"
+  internal-token: "${INTERNAL_TOKEN:}"
+
+logging:
+  level:
+    ru.rugo: INFO
+    ru.rugo.admin: DEBUG
+    ru.max.botapi: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # Наружу не проксируется (Nginx проксирует только /admin); health — локально.
+        include: health
+  endpoint:
+    health:
+      show-details: never

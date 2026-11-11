@@ -1,0 +1,118 @@
+# Токен MAX-бота: проверка подписи initData мини-приложения и доставка
+# приветствия бота (при «Начать»/`/start`) через webhook или long polling;
+# диалогов между пользователем и ботом нет.
+max:
+  bot:
+    token: "${MAX_BOT_TOKEN:}"
+    # longpoll — старый режим; webhook — production-режим MAX.
+    delivery-mode: "${MAX_DELIVERY_MODE:longpoll}"
+    webhook:
+      # Пусто — берётся ${PUBLIC_BASE_URL}/api/max/webhook
+      url: "${MAX_WEBHOOK_URL:}"
+      secret: "${MAX_WEBHOOK_SECRET:}"
+  webhook:
+    # Как часто проверять/восстанавливать подписку (мс)
+    check-delay-ms: "${MAX_WEBHOOK_CHECK_DELAY_MS:300000}"
+
+server:
+  port: 8080
+  # Слушаем только локально; наружу — через Nginx (override: SERVER_ADDRESS=0.0.0.0)
+  address: "${SERVER_ADDRESS:127.0.0.1}"
+  # Заголовки прокси разбираем сами (ClientIpResolver) только от доверенных прокси,
+  # поэтому встроенное доверие к X-Forwarded-For выключено (защита от подделки IP, V-029).
+  forward-headers-strategy: none
+
+spring:
+  config:
+    import: "optional:file:.env[.properties]"
+  servlet:
+    multipart:
+      # Максимум на один файл (загрузка фото техники) и на весь запрос.
+      max-file-size: 5MB
+      max-request-size: 16MB
+  datasource:
+    url: "${DB_URL:jdbc:postgresql://localhost:5432/rugo_db}"
+    username: "${DB_USER:rugo_user}"
+    password: "${DB_PASSWORD:}"
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  cache:
+    type: caffeine
+    caffeine:
+      # Короткий TTL: карточки, созданные админ-ботом (другой процесс), появляются быстро
+      spec: expireAfterWrite=2m, maximumSize=100
+  task:
+    scheduling:
+      pool:
+        # Long-polling основного бота не должен блокировать другие задачи
+        size: 2
+    execution:
+      pool:
+        # Ограниченный пул для @Async-уведомлений (не разрастается под нагрузкой)
+        core-size: 1
+        max-size: 2
+        queue-capacity: 100
+
+logging:
+  level:
+    ru.rugo: INFO
+    ru.max.botapi: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # Наружу ничего не проксируем (Nginx не проксирует /actuator); доступ только локально.
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+app:
+  # Публичный HTTPS-адрес приложения (для URL webhook MAX)
+  public-base-url: "${PUBLIC_BASE_URL:}"
+  # Токен внутреннего вызова сброса кэша каталога (из админки; пусто — выключено)
+  internal-token: "${INTERNAL_TOKEN:}"
+  # Засев демо-данных (по умолчанию выключен; включается только в dev-профиле)
+  seed-enabled: "${APP_SEED_ENABLED:false}"
+  # Принимать заявки без проверенного initData (только dev/staging; на проде false)
+  allow-anon-leads: "${ALLOW_ANON_LEADS:false}"
+  # Требовать подпись номера из requestContact (true на проде; выключатель на случай смены формулы MAX)
+  contact-signature-required: "${CONTACT_SIGNATURE_REQUIRED:true}"
+  # Срок годности подписи requestContact (сек). Защита от повторного использования перехваченной подписи
+  contact-signature-max-age-seconds: "${CONTACT_SIGNATURE_MAX_AGE_SECONDS:600}"
+  # Приветствие основного бота при нажатии «Начать» (без диалогов)
+  bot-greeting: "Здравствуйте! Это RuGo — аренда спецтехники, материалы и ремонт в Воронеже. Нажмите «Открыть», чтобы подобрать технику или разместить своё предложение."
+  # Загрузка фото техники партнёром (можно выключить без пересборки)
+  photo-uploads-enabled: "${PHOTO_UPLOADS_ENABLED:true}"
+  # Максимальный размер одного фото в байтах (5 МБ)
+  photo-max-bytes: "${PHOTO_MAX_BYTES:5242880}"
+  # Время жизни initData в секундах (документация MAX рекомендует 1 час)
+  init-data-max-age-seconds: "${INIT_DATA_MAX_AGE_SECONDS:3600}"
+  # Соль для HMAC user_hash в аналитике (обязательна на проде)
+  analytics-salt: "${ANALYTICS_SALT:}"
+  # Origin staging-фронтенда для CORS (в проде не нужен, один домен)
+  webapp-origin: "${WEBAPP_ORIGIN:}"
+  # Доверенные обратные прокси: только от них принимаем X-Forwarded-For/X-Real-IP.
+  trusted-proxies: "${TRUSTED_PROXIES:127.0.0.1,::1}"
+  rate-limit:
+    # заявки: не более N с одного IP за окно (сек)
+    lead-per-ip: "${LEAD_PER_IP:10}"
+    lead-ip-window-seconds: "${LEAD_IP_WINDOW_SECONDS:3600}"
+    # заявки: не более N от одного max_user_id за окно (сек)
+    lead-per-user: "${LEAD_PER_USER:5}"
+    lead-user-window-seconds: "${LEAD_USER_WINDOW_SECONDS:3600}"
+    # окно дедупликации по телефону (мин); 0 — выключено
+    lead-dedup-minutes: "${LEAD_DEDUP_MINUTES:10}"
+  events-limit:
+    # максимум событий в одном батче
+    max-batch: "${EVENTS_MAX_BATCH:50}"
+    # максимальный размер тела запроса, байт
+    max-body-bytes: "${EVENTS_MAX_BODY_BYTES:32768}"
+    # максимальный размер props события, байт
+    max-props-bytes: "${EVENTS_MAX_PROPS_BYTES:4096}"
+    # лимит запросов /api/events с одного IP
+    rate-per-ip: "${EVENTS_RATE_PER_IP:120}"
+    rate-window-seconds: "${EVENTS_RATE_WINDOW_SECONDS:60}"

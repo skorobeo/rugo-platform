@@ -1,0 +1,28 @@
+# Профиль локальной разработки: H2 в памяти (совместим с PostgreSQL-синтаксисом)
+# Запуск: mvn -pl rugo-app spring-boot:run -Dspring-boot.run.profiles=dev
+
+spring:
+  datasource:
+    url: "jdbc:h2:mem:rugodb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;NON_KEYWORDS=YEAR"
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+logging:
+  level:
+    ru.rugo: DEBUG
+    ru.max.botapi: DEBUG
+    org.hibernate.SQL: DEBUG
+
+app:
+  # Демо-каталог для локальной разработки (на проде выключен)
+  seed-enabled: true
+  # Разрешить заявки без проверки подписи initData — ТОЛЬКО для локальной разработки
+  allow-anon-leads: true
